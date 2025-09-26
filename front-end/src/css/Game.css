@@ -1,0 +1,61 @@
+/* Game.css */
+.game-root {
+  width: 100vw;
+  height: 100vh;
+  position: relative;
+  overflow: hidden;
+  font-family: Inter, Arial, sans-serif;
+  color: #fff;
+}
+
+canvas {
+  display: block;
+}
+
+/* top-right UI */
+.ui-top-right {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 40;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.ui-btn {
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.ui-btn.small { padding: 6px 8px; font-size: 0.9rem; }
+
+/* bottom-left legend */
+.ui-bottom-left {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 30;
+}
+.panel {
+  background: rgba(0,0,0,0.55);
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* hint text when locked */
+.hint {
+  margin-right: 12px;
+  color: #d8e6ff;
+  font-size: 0.95rem;
+}
+
+/* small responsive adjustments */
+@media (max-width: 600px) {
+  .ui-btn { padding: 6px 8px; font-size: 0.9rem; }
+  .hint { font-size: 0.85rem; }
+}
