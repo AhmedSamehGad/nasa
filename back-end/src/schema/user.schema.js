@@ -9,10 +9,12 @@ const UserSchema = mongoose.Schema({
     email:{type:String, unique:true},
     password:String,
 
+    tokens:{type:[String], default:[]},
+
     // check email
-    isverified:{type:Boolean, default:false},
+    isVerified:{type:Boolean, default:false},
     verifyCode:String,
-    verifyExpires:{type:Date, default: () => Date.now() + 10 * 60 * 1000},
+    verifyExpires: { type: Date, default: () => new Date(Date.now() + 10 * 60 * 1000) },
 
 }, {timestamps:true})
 
