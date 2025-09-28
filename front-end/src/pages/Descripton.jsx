@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react"
+import { useLocation } from "react-router-dom"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { OrbitControls, Stars, PointerLockControls } from "@react-three/drei"
 import * as THREE from "three"
@@ -94,38 +95,59 @@ function ImageBox({ src, caption }) {
   )
 }
 
-export default function DescriptionCarousel() {
+function DescriptionCarousel() {
   const [freeControl, setFreeControl] = useState(false)
+  const location = useLocation();
+  const carouselRef = useRef(null);
+
+  // Map planet names to slide indices
+  const planetToIndex = {
+    Vesta: 0,
+    Pluto: 1,
+    Earth: 2,
+  };
+
+  // Parse ?slide= or ?planet= from query string
+  function getSlideFromQuery() {
+    const params = new URLSearchParams(location.search);
+    const planet = params.get("planet");
+    if (planet && planetToIndex.hasOwnProperty(planet)) {
+      return planetToIndex[planet];
+    }
+    const idx = parseInt(params.get("slide"), 10);
+    return isNaN(idx) ? 0 : Math.max(0, Math.min(2, idx));
+  }
+
+  useEffect(() => {
+    // On mount or location change, jump to the correct slide
+    const idx = getSlideFromQuery();
+    if (carouselRef.current) {
+      // Bootstrap carousel API
+      // eslint-disable-next-line no-undef
+      if (window.bootstrap && window.bootstrap.Carousel) {
+        const carousel = window.bootstrap.Carousel.getOrCreateInstance(carouselRef.current);
+        carousel.to(idx);
+      } else {
+        // fallback: set active class manually
+        const items = carouselRef.current.querySelectorAll('.carousel-item');
+        items.forEach((el, i) => {
+          el.classList.toggle('active', i === idx);
+        });
+      }
+    }
+  }, [location]);
 
   return (
     <div>
       {/* Jump buttons */}
       <div className="jump-buttons">
-        <button
-          className="btn btn-outline-light"
-          data-bs-target="#carouselExample"
-          data-bs-slide-to="0"
-        >
-          Go to Vesta
-        </button>
-        <button
-          className="btn btn-outline-light"
-          data-bs-target="#carouselExample"
-          data-bs-slide-to="1"
-        >
-          Go to Pluto
-        </button>
-        <button
-          className="btn btn-outline-light"
-          data-bs-target="#carouselExample"
-          data-bs-slide-to="2"
-        >
-          Go to Earth
-        </button>
+        <button className="btn btn-outline-light" onClick={() => window.location.search = '?slide=0'}>Go to Vesta</button>
+        <button className="btn btn-outline-light" onClick={() => window.location.search = '?slide=1'}>Go to Pluto</button>
+        <button className="btn btn-outline-light" onClick={() => window.location.search = '?slide=2'}>Go to Earth</button>
       </div>
 
       {/* Carousel */}
-      <div id="carouselExample" className="carousel slide" data-bs-ride="false">
+      <div id="carouselExample" className="carousel slide" data-bs-ride="false" ref={carouselRef}>
         {/* Control toggle button in top-right corner */}
         <button
           className="control-toggle top-right"
@@ -192,3 +214,4 @@ export default function DescriptionCarousel() {
     </div>
   )
 }
+export default DescriptionCarousel;

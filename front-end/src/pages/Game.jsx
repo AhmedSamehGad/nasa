@@ -1,5 +1,6 @@
 // Game.jsx
 import React, { useRef, useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { PointerLockControls, Stars, Html } from "@react-three/drei"
 import * as THREE from "three"
@@ -224,6 +225,31 @@ function Walls({ layout }) {
 }
 
 export default function Game() {
+  const navigate = useNavigate();
+  // Add planetList and selectedPlanet state
+  const [selectedPlanet, setSelectedPlanet] = useState(0);
+  const planetList = [
+    {
+      name: "Earth",
+      emoji: "🌍",
+      desc: "The Blue Planet. Home base for humanity.",
+    },
+    {
+      name: "Mars",
+      emoji: "🔴",
+      desc: "The Red Planet. Top destination for explorers.",
+    },
+    {
+      name: "Jupiter",
+      emoji: "🪐",
+      desc: "Gas giant. Known for its massive storms.",
+    },
+    {
+      name: "Pluto",
+      emoji: "❄️",
+      desc: "The dwarf planet. Cold and mysterious.",
+    },
+  ];
   const wallsLayout = [
     { pos: [0, 1, -20], size: [40, 2, 1] },
     { pos: [0, 1, 20], size: [40, 2, 1] },
@@ -309,22 +335,18 @@ export default function Game() {
             </div>
 
             <div className="planet-cards">
-              <div className="planet-card" data-slide="0">
-                <h3>🌍 Earth</h3>
-                <p>The Blue Planet. Home base for humanity.</p>
-              </div>
-              <div className="planet-card" data-slide="1">
-                <h3>🔴 Mars</h3>
-                <p>The Red Planet. Top destination for explorers.</p>
-              </div>
-              <div className="planet-card" data-slide="2">
-                <h3>🪐 Jupiter</h3>
-                <p>Gas giant. Known for its massive storms.</p>
-              </div>
-              <div className="planet-card" data-slide="3">
-                <h3>❄️ Pluto</h3>
-                <p>The dwarf planet. Cold and mysterious.</p>
-              </div>
+              {planetList.map((planet, idx) => (
+                <div
+                  key={planet.name}
+                  className={`planet-card${selectedPlanet === idx ? " selected" : ""}`}
+                  data-slide={idx}
+                  onClick={() => navigate(`/description?planet=${encodeURIComponent(planet.name)}`)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <h3>{planet.emoji} {planet.name}</h3>
+                  <p>{planet.desc}</p>
+                </div>
+              ))}
             </div>
           </div>
         </Html>
