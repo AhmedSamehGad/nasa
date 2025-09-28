@@ -291,26 +291,43 @@ export default function Game() {
 
         {/* === Always Visible Virtual Screen with Search Bar === */}
 <Html
-  position={[screenPos[0] -0.02, screenPos[1] + 0.77, screenPos[2] + 0.1]}
-  transform
-  distanceFactor={1.5}
-  scale={[0.225, 0.21, 0.2]}
->
-  <div className="virtual-screen">
-    <div className="d-flex justify-content-between">
-            <input
-      type="text"
-      placeholder="Search..."
-      className="virtual-screen-input"
-    />
-    <select name="last_visited" id="last_visited" className="last_visited">
-        <option value="Earth">Earth</option>
-        <option value="Earth">Pluto</option>
-        <option value="Earth">Jupiter</option>
-    </select>
-    </div>
-  </div>
-</Html>
+          position={[screenPos[0] - 0.02, screenPos[1] + 0.77, screenPos[2] + 0.1]}
+          transform
+          distanceFactor={1.5}
+          scale={[0.1255, 0.13, 0.1]}
+        >
+          <div className="space-screen">
+            <div className="screen-header">
+              <h2>🚀 Mission Console</h2>
+              <input type="text" placeholder="Search planets..." />
+              <select>
+                <option>Earth</option>
+                <option>Mars</option>
+                <option>Jupiter</option>
+                <option>Pluto</option>
+              </select>
+            </div>
+
+            <div className="planet-cards">
+              <div className="planet-card" data-slide="0">
+                <h3>🌍 Earth</h3>
+                <p>The Blue Planet. Home base for humanity.</p>
+              </div>
+              <div className="planet-card" data-slide="1">
+                <h3>🔴 Mars</h3>
+                <p>The Red Planet. Top destination for explorers.</p>
+              </div>
+              <div className="planet-card" data-slide="2">
+                <h3>🪐 Jupiter</h3>
+                <p>Gas giant. Known for its massive storms.</p>
+              </div>
+              <div className="planet-card" data-slide="3">
+                <h3>❄️ Pluto</h3>
+                <p>The dwarf planet. Cold and mysterious.</p>
+              </div>
+            </div>
+          </div>
+        </Html>
 
 
 
