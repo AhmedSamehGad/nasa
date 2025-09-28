@@ -1,0 +1,27 @@
+h1{
+
+
+    color: white;
+    font-size: 4rem;
+    font: bold;
+
+    padding-top: 2rem;
+}
+
+p{
+
+
+    color: white;
+    font-size: 2rem;
+    font: bold;
+   
+}
+
+button{
+
+   height: 7rem;
+   width:  9rem;
+   background-color: cadetblue;
+}
+
+
