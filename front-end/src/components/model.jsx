@@ -5,13 +5,13 @@ import * as THREE from "three"
 // global array to hold all colliders
 export const colliders = []
 
-export default function Model({
+const Model = React.forwardRef(function Model({
   path,
   position = [0, 0, 0],
   scale = 1,
   rotation = [0, 0, 0],
   color,
-}) {
+}, ref) {
   const { scene } = useGLTF(path)
 
   useEffect(() => {
@@ -51,6 +51,8 @@ export default function Model({
   }, [scene, color, position, scale])
 
   return (
-    <primitive object={scene} scale={scale} position={position} rotation={rotation} />
+    <primitive ref={ref} object={scene} scale={scale} position={position} rotation={rotation} />
   )
-}
+})
+
+export default Model

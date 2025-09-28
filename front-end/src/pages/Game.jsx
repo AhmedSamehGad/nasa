@@ -1,5 +1,6 @@
 // Game.jsx
 import React, { useRef, useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { PointerLockControls, Stars, Html } from "@react-three/drei"
 import * as THREE from "three"
@@ -35,14 +36,14 @@ function PlayerController({
   const footstepSound = useRef(null)
 
   useEffect(() => {
-    footstepSound.current = new Audio("/audios/")
+    footstepSound.current = new Audio("/audios/footsteps.mp3")
     footstepSound.current.loop = true
-    footstepSound.current.volume = 0.7
+    footstepSound.current.volume = 1
 
     const stopFootsteps = () => {
-      if (footstepSound.current) {
-        footstepSound.current.pause()
-        footstepSound.current.currentTime = 0
+      if (footstepSound.current && !footstepSound.current.paused) {
+        footstepSound.current.pause();
+        footstepSound.current.currentTime = 0;
       }
     }
 
@@ -63,6 +64,7 @@ function PlayerController({
       }
     }
 
+
     const onKeyDown = (e) => {
       if (e.code === "KeyW") input.current.forward = 1
       if (e.code === "KeyS") input.current.forward = -1
@@ -75,14 +77,24 @@ function PlayerController({
         const p = player.current
         const dist = p.pos.distanceTo(new THREE.Vector3(...chairCenter))
         if (dist < chairRadius && !sitting) {
-          stopFootsteps()
+          stopFootsteps();
           setSitting(true)
           p.pos.set(chairCenter[0], chairCenter[1] + 0.5, chairCenter[2])
           p.vel.set(0, 0, 0)
         }
       }
+      // Ctrl or N exits sitting, but NOT in focus (zoomed) mode
+      if ((e.code === "ControlLeft" || e.code === "ControlRight") && sitting && !zoomed) {
+        stopFootsteps();
+        setSitting(false);
+        setZoomed(false);
+        setCameraLocked(false);
+        const p = player.current;
+        p.pos.set(chairCenter[0], chairCenter[1] + 0.5, chairCenter[2] - 1.2);
+        p.vel.set(0, 0, 0);
+      }
       if (e.code === "KeyN") {
-        if (sitting) {
+        if (sitting && !zoomed) {
           stopFootsteps()
           setSitting(false)
           setZoomed(false)
@@ -93,12 +105,12 @@ function PlayerController({
         }
       }
       if (e.code === "KeyF") {
-        if (sitting) {
-          setZoomed((prev) => {
-            const newZoom = !prev
-            setCameraLocked(newZoom)
-            return newZoom
-          })
+        if (sitting && !zoomed) {
+          setZoomed(true);
+          setCameraLocked(true);
+          // Show mouse pointer and exit pointer lock
+          if (document.exitPointerLock) document.exitPointerLock();
+          document.body.style.cursor = "auto";
         }
       }
 
@@ -159,6 +171,10 @@ function PlayerController({
       camera.fov = zoomed ? 12 : 75
       camera.updateProjectionMatrix()
       if (zoomed) {
+        // Always show mouse pointer in focus mode
+        document.body.style.cursor = "auto";
+        // Prevent pointer lock
+        if (document.exitPointerLock) document.exitPointerLock();
         const focusTarget = new THREE.Vector3(...focusPos)
         camera.lookAt(focusTarget)
       }
@@ -205,6 +221,13 @@ function PlayerController({
     const distToChair = p.pos.distanceTo(chairVec)
     const shouldShow = distToChair < chairRadius && !sitting
     setShowSitPrompt((prev) => (prev === shouldShow ? prev : shouldShow))
+    // If near the chair and not sitting, always stop footsteps
+    if (shouldShow && !sitting) {
+      if (footstepSound.current && !footstepSound.current.paused) {
+        footstepSound.current.pause();
+        footstepSound.current.currentTime = 0;
+      }
+    }
   })
 
   return null
@@ -224,6 +247,57 @@ function Walls({ layout }) {
 }
 
 export default function Game() {
+  // Wind SFX background (robust for refresh)
+  useEffect(() => {
+    let wind = new Audio("/audios/wind.mp3");
+    wind.loop = true;
+    wind.volume = 0.65;
+    // Try to play immediately
+    const tryPlay = () => {
+      wind.currentTime = 0;
+      wind.play().catch(() => {
+        // If autoplay is blocked, play on first user gesture
+        const resume = () => {
+          wind.play().catch(() => {});
+          window.removeEventListener("pointerdown", resume);
+          window.removeEventListener("keydown", resume);
+        };
+        window.addEventListener("pointerdown", resume);
+        window.addEventListener("keydown", resume);
+      });
+    };
+    tryPlay();
+    return () => {
+      wind.pause();
+      wind.currentTime = 0;
+      wind = null;
+    };
+  }, []);
+  const navigate = useNavigate();
+  // Add planetList and selectedPlanet state
+  const [selectedPlanet, setSelectedPlanet] = useState(0);
+  const planetList = [
+    {
+      name: "Earth",
+      emoji: "🌍",
+      desc: "The Blue Planet. Home base for humanity.",
+    },
+    {
+      name: "Mars",
+      emoji: "🔴",
+      desc: "The Red Planet. Top destination for explorers.",
+    },
+    {
+      name: "Jupiter",
+      emoji: "🪐",
+      desc: "Gas giant. Known for its massive storms.",
+    },
+    {
+      name: "Pluto",
+      emoji: "❄️",
+      desc: "The dwarf planet. Cold and mysterious.",
+    },
+  ];
   const wallsLayout = [
     { pos: [0, 1, -20], size: [40, 2, 1] },
     { pos: [0, 1, 20], size: [40, 2, 1] },
@@ -286,31 +360,48 @@ export default function Game() {
         <ambientLight intensity={0.25} />
         <directionalLight position={[10, 20, 10]} intensity={1.0} castShadow />
 
-        <Model path={"/models/seat.glb"} rotation={[0, 3.2, 0]} position={chairCenter} scale={0.7} />
-        <Model path={"/models/screen.glb"} position={screenPos} scale={0.7} />
+  <Model path={"/models/seat.glb"} rotation={[0, 3.2, 0]} position={chairCenter} scale={0.7} />
+  <Model path={"/models/screen.glb"} position={screenPos} scale={0.7} />
+  {/* Moon model in the night sky, shining */}
+  <Model path={"/models/moon.glb"} position={[-8, 14, -30]} scale={2.2} />
+  {/* Moon shine light */}
+  <pointLight position={[-8, 15.5, -30]} intensity={4.5} color="#fffbe6" distance={30} decay={2} castShadow />
 
         {/* === Always Visible Virtual Screen with Search Bar === */}
 <Html
-  position={[screenPos[0] -0.02, screenPos[1] + 0.77, screenPos[2] + 0.1]}
-  transform
-  distanceFactor={1.5}
-  scale={[0.225, 0.21, 0.2]}
->
-  <div className="virtual-screen">
-    <div className="d-flex justify-content-between">
-            <input
-      type="text"
-      placeholder="Search..."
-      className="virtual-screen-input"
-    />
-    <select name="last_visited" id="last_visited" className="last_visited">
-        <option value="Earth">Earth</option>
-        <option value="Earth">Pluto</option>
-        <option value="Earth">Jupiter</option>
-    </select>
-    </div>
-  </div>
-</Html>
+          position={[screenPos[0] - 0.02, screenPos[1] + 0.77, screenPos[2] + 0.1]}
+          transform
+          distanceFactor={1.5}
+          scale={[0.1255, 0.13, 0.1]}
+        >
+          <div className="space-screen">
+            <div className="screen-header">
+              <h2>🚀 Mission Console</h2>
+              <input type="text" placeholder="Search planets..." />
+              <select>
+                <option>Earth</option>
+                <option>Mars</option>
+                <option>Jupiter</option>
+                <option>Pluto</option>
+              </select>
+            </div>
+
+            <div className="planet-cards">
+              {planetList.map((planet, idx) => (
+                <div
+                  key={planet.name}
+                  className={`planet-card${selectedPlanet === idx ? " selected" : ""}`}
+                  data-slide={idx}
+                  onClick={() => navigate(`/description?planet=${encodeURIComponent(planet.name)}`)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <h3>{planet.emoji} {planet.name}</h3>
+                  <p>{planet.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Html>
 
 
 
@@ -372,15 +463,41 @@ export default function Game() {
         )}
       </div>
 
+      {/* Info icon and E button when near chair */}
       {showSitPrompt && !sitting && (
-        <div className="ui-center">
-          <span className="hint">Press E to sit</span>
-        </div>
+        <>
+          <div className="ui-center">
+            <span className="hint">
+              <span style={{display:'inline-flex',alignItems:'center',gap:8}}>
+                <span style={{display:'inline-block',width:22,height:22,borderRadius:'50%',background:'#3498db',color:'#fff',fontWeight:'bold',fontSize:16,justifyContent:'center',alignItems:'center',textAlign:'center',lineHeight:'22px'}}>i</span>
+                <span style={{display:'inline-block',background:'#222',color:'#fff',borderRadius:4,padding:'2px 8px',fontWeight:'bold',marginLeft:4,boxShadow:'0 1px 3px #0003'}}>E</span>
+                <span style={{marginLeft:8}}>Press E to sit</span>
+              </span>
+            </span>
+          </div>
+          {/* Bottom center message */}
+          <div style={{position:'fixed',left:'50%',bottom:32,transform:'translateX(-50%)',zIndex:1000,background:'#222d',color:'#fff',borderRadius:8,padding:'10px 18px',fontSize:17,boxShadow:'0 2px 8px #0005',textAlign:'center'}}>
+            Press <b>E</b> to interact
+          </div>
+        </>
       )}
+      {/* Left bottom message when sitting */}
       {sitting && (
-        <div className="ui-center">
-          <span className="hint">Press N to stand • Press F to focus</span>
-        </div>
+        <>
+          <div className="ui-center">
+            <span className="hint">Press N to stand • Press F to focus</span>
+          </div>
+          <div style={{position:'fixed',left:20,bottom:20,zIndex:1000,background:'#222d',color:'#fff',borderRadius:8,padding:'10px 18px',fontSize:17,boxShadow:'0 2px 8px #0005'}}>
+            {zoomed ? (
+              <div>Press <b>F</b> to exit focus</div>
+            ) : (
+              <>
+                <div>Press <b>F</b> to focus on screen</div>
+                <div>Press <b>Ctrl</b> to exit</div>
+              </>
+            )}
+          </div>
+        </>
       )}
     </div>
   )
