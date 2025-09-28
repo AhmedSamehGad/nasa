@@ -98,69 +98,97 @@ export default function DescriptionCarousel() {
   const [freeControl, setFreeControl] = useState(false)
 
   return (
-    <div id="carouselExample" className="carousel slide" data-bs-ride="false">
-      {/* Control toggle button in top-right corner */}
-      <button
-        className="control-toggle top-right"
-        onClick={() => setFreeControl(!freeControl)}
-      >
-        <FaGamepad size={24} />
-      </button>
-
-      <div className="carousel-inner">
-        {/* Vesta */}
-        <div className="carousel-item active">
-          <div className="canvas-wrapper">
-            <Scene ambient={3} directional={0.8} freeControl={freeControl}>
-              <Model path="/models/vesta.glb" scale={0.001} />
-            </Scene>
-            <DescriptionBox text="Vesta is one of the largest asteroids in the asteroid belt." />
-            <ImageBox src="/images/vesta.jpg" caption="Vesta Overview" />
-          </div>
-        </div>
-
-        {/* Pluto */}
-        <div className="carousel-item">
-          <div className="canvas-wrapper">
-            <Scene ambient={2.5} directional={0.5} freeControl={freeControl}>
-              <Model path="/models/pluto.glb" scale={0.005} />
-            </Scene>
-            <DescriptionBox text="Pluto is a dwarf planet located in the Kuiper Belt." />
-            <ImageBox src="/imges/pluto.jpg" caption="Pluto Overview" />
-          </div>
-        </div>
-
-        {/* Earth */}
-        <div className="carousel-item">
-          <div className="canvas-wrapper">
-            <Scene ambient={1} directional={1.2} freeControl={freeControl}>
-              <Model path="/models/earth.glb" scale={2} />
-            </Scene>
-            <DescriptionBox text="Earth is the only known planet that supports life." />
-            <ImageBox src="/images/earth.jpg" caption="Earth Overview" />
-          </div>
-        </div>
+    <div>
+      {/* Jump buttons */}
+      <div className="jump-buttons">
+        <button
+          className="btn btn-outline-light"
+          data-bs-target="#carouselExample"
+          data-bs-slide-to="0"
+        >
+          Go to Vesta
+        </button>
+        <button
+          className="btn btn-outline-light"
+          data-bs-target="#carouselExample"
+          data-bs-slide-to="1"
+        >
+          Go to Pluto
+        </button>
+        <button
+          className="btn btn-outline-light"
+          data-bs-target="#carouselExample"
+          data-bs-slide-to="2"
+        >
+          Go to Earth
+        </button>
       </div>
 
-      {/* Carousel Controls */}
-      <button
-        className="carousel-control-prev"
-        type="button"
-        data-bs-target="#carouselExample"
-        data-bs-slide="prev"
-      >
-        <span className="carousel-control-prev-icon" aria-hidden="true"></span>
-        <span className="visually-hidden">Previous</span>
-      </button>
-      <button
-        className="carousel-control-next"
-        type="button"
-        data-bs-target="#carouselExample"
-        data-bs-slide="next"
-      >
-        <span className="carousel-control-next-icon" aria-hidden="true"></span>
-        <span className="visually-hidden">Next</span>
-      </button>
+      {/* Carousel */}
+      <div id="carouselExample" className="carousel slide" data-bs-ride="false">
+        {/* Control toggle button in top-right corner */}
+        <button
+          className="control-toggle top-right"
+          onClick={() => setFreeControl(!freeControl)}
+        >
+          <FaGamepad size={24} />
+        </button>
+
+        <div className="carousel-inner">
+          {/* Vesta */}
+          <div className="carousel-item active">
+            <div className="canvas-wrapper">
+              <Scene ambient={3} directional={0.8} freeControl={freeControl}>
+                <Model path="/models/vesta.glb" scale={0.001} />
+              </Scene>
+              <DescriptionBox text="Vesta is one of the largest asteroids in the asteroid belt." />
+              <ImageBox src="/images/vesta.jpg" caption="Vesta Overview" />
+            </div>
+          </div>
+
+          {/* Pluto */}
+          <div className="carousel-item">
+            <div className="canvas-wrapper">
+              <Scene ambient={2.5} directional={0.5} freeControl={freeControl}>
+                <Model path="/models/pluto.glb" scale={0.005} />
+              </Scene>
+              <DescriptionBox text="Pluto is a dwarf planet located in the Kuiper Belt." />
+              <ImageBox src="/images/pluto.jpg" caption="Pluto Overview" />
+            </div>
+          </div>
+
+          {/* Earth */}
+          <div className="carousel-item">
+            <div className="canvas-wrapper">
+              <Scene ambient={1} directional={1.2} freeControl={freeControl}>
+                <Model path="/models/earth.glb" scale={2} />
+              </Scene>
+              <DescriptionBox text="Earth is the only known planet that supports life." />
+              <ImageBox src="/images/earth.jpg" caption="Earth Overview" />
+            </div>
+          </div>
+        </div>
+
+        {/* Carousel Controls */}
+        <button
+          className="carousel-control-prev"
+          type="button"
+          data-bs-target="#carouselExample"
+          data-bs-slide="prev"
+        >
+          <span className="carousel-control-prev-icon" aria-hidden="true"></span>
+          <span className="visually-hidden">Previous</span>
+        </button>
+        <button
+          className="carousel-control-next"
+          type="button"
+          data-bs-target="#carouselExample"
+          data-bs-slide="next"
+        >
+          <span className="carousel-control-next-icon" aria-hidden="true"></span>
+          <span className="visually-hidden">Next</span>
+        </button>
+      </div>
     </div>
   )
 }
