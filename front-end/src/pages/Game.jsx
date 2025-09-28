@@ -36,14 +36,14 @@ function PlayerController({
   const footstepSound = useRef(null)
 
   useEffect(() => {
-    footstepSound.current = new Audio("/audios/")
+    footstepSound.current = new Audio("/audios/footsteps.mp3")
     footstepSound.current.loop = true
     footstepSound.current.volume = 0.7
 
     const stopFootsteps = () => {
-      if (footstepSound.current) {
-        footstepSound.current.pause()
-        footstepSound.current.currentTime = 0
+      if (footstepSound.current && !footstepSound.current.paused) {
+        footstepSound.current.pause();
+        footstepSound.current.currentTime = 0;
       }
     }
 
@@ -64,6 +64,7 @@ function PlayerController({
       }
     }
 
+
     const onKeyDown = (e) => {
       if (e.code === "KeyW") input.current.forward = 1
       if (e.code === "KeyS") input.current.forward = -1
@@ -76,11 +77,21 @@ function PlayerController({
         const p = player.current
         const dist = p.pos.distanceTo(new THREE.Vector3(...chairCenter))
         if (dist < chairRadius && !sitting) {
-          stopFootsteps()
+          stopFootsteps();
           setSitting(true)
           p.pos.set(chairCenter[0], chairCenter[1] + 0.5, chairCenter[2])
           p.vel.set(0, 0, 0)
         }
+      }
+      // Ctrl exits sitting
+      if ((e.code === "ControlLeft" || e.code === "ControlRight") && sitting) {
+        stopFootsteps();
+        setSitting(false);
+        setZoomed(false);
+        setCameraLocked(false);
+        const p = player.current;
+        p.pos.set(chairCenter[0], chairCenter[1] + 0.5, chairCenter[2] - 1.2);
+        p.vel.set(0, 0, 0);
       }
       if (e.code === "KeyN") {
         if (sitting) {
@@ -206,6 +217,13 @@ function PlayerController({
     const distToChair = p.pos.distanceTo(chairVec)
     const shouldShow = distToChair < chairRadius && !sitting
     setShowSitPrompt((prev) => (prev === shouldShow ? prev : shouldShow))
+    // If near the chair and not sitting, always stop footsteps
+    if (shouldShow && !sitting) {
+      if (footstepSound.current && !footstepSound.current.paused) {
+        footstepSound.current.pause();
+        footstepSound.current.currentTime = 0;
+      }
+    }
   })
 
   return null
@@ -411,15 +429,35 @@ export default function Game() {
         )}
       </div>
 
+      {/* Info icon and E button when near chair */}
       {showSitPrompt && !sitting && (
-        <div className="ui-center">
-          <span className="hint">Press E to sit</span>
-        </div>
+        <>
+          <div className="ui-center">
+            <span className="hint">
+              <span style={{display:'inline-flex',alignItems:'center',gap:8}}>
+                <span style={{display:'inline-block',width:22,height:22,borderRadius:'50%',background:'#3498db',color:'#fff',fontWeight:'bold',fontSize:16,justifyContent:'center',alignItems:'center',textAlign:'center',lineHeight:'22px'}}>i</span>
+                <span style={{display:'inline-block',background:'#222',color:'#fff',borderRadius:4,padding:'2px 8px',fontWeight:'bold',marginLeft:4,boxShadow:'0 1px 3px #0003'}}>E</span>
+                <span style={{marginLeft:8}}>Press E to sit</span>
+              </span>
+            </span>
+          </div>
+          {/* Bottom center message */}
+          <div style={{position:'fixed',left:'50%',bottom:32,transform:'translateX(-50%)',zIndex:1000,background:'#222d',color:'#fff',borderRadius:8,padding:'10px 18px',fontSize:17,boxShadow:'0 2px 8px #0005',textAlign:'center'}}>
+            Press <b>E</b> to interact
+          </div>
+        </>
       )}
+      {/* Left bottom message when sitting */}
       {sitting && (
-        <div className="ui-center">
-          <span className="hint">Press N to stand • Press F to focus</span>
-        </div>
+        <>
+          <div className="ui-center">
+            <span className="hint">Press N to stand • Press F to focus</span>
+          </div>
+          <div style={{position:'fixed',left:20,bottom:20,zIndex:1000,background:'#222d',color:'#fff',borderRadius:8,padding:'10px 18px',fontSize:17,boxShadow:'0 2px 8px #0005'}}>
+            <div>Press <b>F</b> to focus on screen</div>
+            <div>Press <b>Ctrl</b> to exit</div>
+          </div>
+        </>
       )}
     </div>
   )
