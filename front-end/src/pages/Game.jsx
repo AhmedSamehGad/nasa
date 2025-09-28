@@ -38,7 +38,7 @@ function PlayerController({
   useEffect(() => {
     footstepSound.current = new Audio("/audios/footsteps.mp3")
     footstepSound.current.loop = true
-    footstepSound.current.volume = 0.7
+    footstepSound.current.volume = 1
 
     const stopFootsteps = () => {
       if (footstepSound.current && !footstepSound.current.paused) {
@@ -83,8 +83,8 @@ function PlayerController({
           p.vel.set(0, 0, 0)
         }
       }
-      // Ctrl exits sitting
-      if ((e.code === "ControlLeft" || e.code === "ControlRight") && sitting) {
+      // Ctrl or N exits sitting, but NOT in focus (zoomed) mode
+      if ((e.code === "ControlLeft" || e.code === "ControlRight") && sitting && !zoomed) {
         stopFootsteps();
         setSitting(false);
         setZoomed(false);
@@ -94,7 +94,7 @@ function PlayerController({
         p.vel.set(0, 0, 0);
       }
       if (e.code === "KeyN") {
-        if (sitting) {
+        if (sitting && !zoomed) {
           stopFootsteps()
           setSitting(false)
           setZoomed(false)
@@ -105,12 +105,12 @@ function PlayerController({
         }
       }
       if (e.code === "KeyF") {
-        if (sitting) {
-          setZoomed((prev) => {
-            const newZoom = !prev
-            setCameraLocked(newZoom)
-            return newZoom
-          })
+        if (sitting && !zoomed) {
+          setZoomed(true);
+          setCameraLocked(true);
+          // Show mouse pointer and exit pointer lock
+          if (document.exitPointerLock) document.exitPointerLock();
+          document.body.style.cursor = "auto";
         }
       }
 
@@ -171,6 +171,10 @@ function PlayerController({
       camera.fov = zoomed ? 12 : 75
       camera.updateProjectionMatrix()
       if (zoomed) {
+        // Always show mouse pointer in focus mode
+        document.body.style.cursor = "auto";
+        // Prevent pointer lock
+        if (document.exitPointerLock) document.exitPointerLock();
         const focusTarget = new THREE.Vector3(...focusPos)
         camera.lookAt(focusTarget)
       }
@@ -243,6 +247,32 @@ function Walls({ layout }) {
 }
 
 export default function Game() {
+  // Wind SFX background (robust for refresh)
+  useEffect(() => {
+    let wind = new Audio("/audios/wind.mp3");
+    wind.loop = true;
+    wind.volume = 0.65;
+    // Try to play immediately
+    const tryPlay = () => {
+      wind.currentTime = 0;
+      wind.play().catch(() => {
+        // If autoplay is blocked, play on first user gesture
+        const resume = () => {
+          wind.play().catch(() => {});
+          window.removeEventListener("pointerdown", resume);
+          window.removeEventListener("keydown", resume);
+        };
+        window.addEventListener("pointerdown", resume);
+        window.addEventListener("keydown", resume);
+      });
+    };
+    tryPlay();
+    return () => {
+      wind.pause();
+      wind.currentTime = 0;
+      wind = null;
+    };
+  }, []);
   const navigate = useNavigate();
   // Add planetList and selectedPlanet state
   const [selectedPlanet, setSelectedPlanet] = useState(0);
@@ -330,8 +360,12 @@ export default function Game() {
         <ambientLight intensity={0.25} />
         <directionalLight position={[10, 20, 10]} intensity={1.0} castShadow />
 
-        <Model path={"/models/seat.glb"} rotation={[0, 3.2, 0]} position={chairCenter} scale={0.7} />
-        <Model path={"/models/screen.glb"} position={screenPos} scale={0.7} />
+  <Model path={"/models/seat.glb"} rotation={[0, 3.2, 0]} position={chairCenter} scale={0.7} />
+  <Model path={"/models/screen.glb"} position={screenPos} scale={0.7} />
+  {/* Moon model in the night sky, shining */}
+  <Model path={"/models/moon.glb"} position={[-8, 14, -30]} scale={2.2} />
+  {/* Moon shine light */}
+  <pointLight position={[-8, 15.5, -30]} intensity={4.5} color="#fffbe6" distance={30} decay={2} castShadow />
 
         {/* === Always Visible Virtual Screen with Search Bar === */}
 <Html
@@ -454,8 +488,14 @@ export default function Game() {
             <span className="hint">Press N to stand • Press F to focus</span>
           </div>
           <div style={{position:'fixed',left:20,bottom:20,zIndex:1000,background:'#222d',color:'#fff',borderRadius:8,padding:'10px 18px',fontSize:17,boxShadow:'0 2px 8px #0005'}}>
-            <div>Press <b>F</b> to focus on screen</div>
-            <div>Press <b>Ctrl</b> to exit</div>
+            {zoomed ? (
+              <div>Press <b>F</b> to exit focus</div>
+            ) : (
+              <>
+                <div>Press <b>F</b> to focus on screen</div>
+                <div>Press <b>Ctrl</b> to exit</div>
+              </>
+            )}
           </div>
         </>
       )}
