@@ -1,6 +1,5 @@
 import '../pages/../css/Home.css'
 
-import NAV from './NAV'
 
 
 export default function Home() {
@@ -8,7 +7,7 @@ export default function Home() {
 
    
     <div className="relative w-full h-screen">
-<NAV />
+
       {/* الخلفية فيديو */}
       <video
         autoPlay
