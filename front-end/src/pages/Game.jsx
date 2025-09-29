@@ -23,6 +23,9 @@ function PlayerController({
   zoomed,
   setZoomed,
   setCameraLocked,
+  powerOnSound,
+  powerOffSound,
+  setPoweringOff,
 }) {
   const { camera } = useThree()
   const player = useRef({
@@ -81,13 +84,26 @@ function PlayerController({
         input.current.jump = true
         if (sitting) {
           if (!screenOn) {
+            // Play power on sound immediately
+            if (powerOnSound && powerOnSound.current) {
+              powerOnSound.current.currentTime = 0;
+              powerOnSound.current.play().catch(() => {});
+            }
             setScreenLoading(true);
             setTimeout(() => {
               setScreenOn(true);
               setScreenLoading(false);
             }, 1200); // 1.2s power-on animation
           } else {
-            setScreenOn(false);
+            // Play power off sound and show CRT bar
+            if (powerOffSound && powerOffSound.current) {
+              powerOffSound.current.currentTime = 0;
+              powerOffSound.current.play().catch(() => {});
+            }
+            if (setPoweringOff) setPoweringOff(true);
+            setTimeout(() => {
+              setScreenOn(false);
+            }, 1100);
           }
         }
       }
@@ -337,11 +353,29 @@ function preloadAudio(url) {
 }
 
 export default function Game() {
+  // Refs for power on/off sounds
+  const powerOnSound = useRef(null);
+  const powerOffSound = useRef(null);
   // Screen power state
   const [screenOn, setScreenOn] = useState(false);
   const [screenLoading, setScreenLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [poweringOff, setPoweringOff] = useState(false);
+
+  useEffect(() => {
+    powerOnSound.current = new Audio("/audios/power_on.mp3");
+    powerOnSound.current.volume = 1;
+    powerOffSound.current = new Audio("/audios/power_off.mp3");
+    powerOffSound.current.volume = 1;
+  }, []);
+  // Hide poweringOff after animation
+  useEffect(() => {
+    if (poweringOff) {
+      const t = setTimeout(() => setPoweringOff(false), 1100);
+      return () => clearTimeout(t);
+    }
+  }, [poweringOff]);
 
   useEffect(() => {
     // Always import GLTFLoader and attach to window.THREE
@@ -539,8 +573,16 @@ export default function Game() {
             {/* Power-on animation overlay */}
             {screenLoading && (
               <div className="screen-loading-overlay">
+                <div className="crt-power-bar" />
                 <div className="screen-power-animation" />
                 <div style={{color:'#fff',fontWeight:'bold',fontSize:18,marginTop:16}}>Powering On...</div>
+              </div>
+            )}
+            {/* Power-off animation overlay */}
+            {poweringOff && (
+              <div className="screen-loading-overlay screen-poweroff-overlay">
+                <div className="crt-poweroff-bar" />
+                <div style={{color:'#fff',fontWeight:'bold',fontSize:18,marginTop:32}}>Powering Off...</div>
               </div>
             )}
             {/* Screen content only if powered on */}
@@ -598,6 +640,9 @@ export default function Game() {
           screenOn={screenOn}
           setScreenOn={setScreenOn}
           setScreenLoading={setScreenLoading}
+          powerOnSound={powerOnSound}
+          powerOffSound={powerOffSound}
+          setPoweringOff={setPoweringOff}
         />
 
         {!cameraLocked && (
