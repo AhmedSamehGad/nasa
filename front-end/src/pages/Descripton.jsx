@@ -3,7 +3,8 @@ import { useLocation } from "react-router-dom"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { OrbitControls, Stars, PointerLockControls } from "@react-three/drei"
 import * as THREE from "three"
-import { FaGamepad } from "react-icons/fa"
+import { FaGamepad, FaCamera, FaFacebook, FaTwitter, FaInstagram } from "react-icons/fa"
+import { FaSave } from "react-icons/fa"
 import "../css/Description.css"
 import Model from "../components/model"
 
@@ -114,8 +115,12 @@ function useResponsiveScale(base, small, mobile) {
 
 function DescriptionCarousel() {
   const [freeControl, setFreeControl] = useState(false)
+  const [planetShot, setPlanetShot] = useState(null)
+  const [showPlanetBanner, setShowPlanetBanner] = useState(false)
+  const [animating, setAnimating] = useState(false)
   const location = useLocation();
   const carouselRef = useRef(null);
+  const canvasRefs = [useRef(null), useRef(null), useRef(null)];
 
   // Map planet names to slide indices
   const planetToIndex = {
@@ -140,7 +145,7 @@ function DescriptionCarousel() {
     return isNaN(idx) ? 0 : Math.max(0, Math.min(2, idx));
   }
 
-    // Touch swipe for mobile (run only after ref is set and in browser)
+  // Touch swipe for mobile (run only after ref is set and in browser)
   useEffect(() => {
     if (typeof window === 'undefined' || window.innerWidth > 600) return;
     const carousel = carouselRef.current;
@@ -204,6 +209,76 @@ function DescriptionCarousel() {
     else if (planet === "earth") window.location.search = '?slide=2';
     // else do nothing or show not found (not implemented)
   }
+
+  // Take a screenshot of the planet in the current carousel slide using planet name
+  function handlePlanetShot() {
+    const params = new URLSearchParams(location.search);
+    let planet = params.get("planet");
+    let idx = getSlideFromQuery();
+    // If planet param is present, use its index
+    if (planet && planetToIndex.hasOwnProperty(planet)) {
+      idx = planetToIndex[planet];
+    }
+    // Use the correct ref for the planet
+    let canvas = null;
+    if (canvasRefs[idx] && canvasRefs[idx].current) {
+      canvas = canvasRefs[idx].current.querySelector('canvas');
+    }
+    // Fallback: try to get the active carousel-item's canvas
+    if (!canvas && carouselRef.current) {
+      const items = carouselRef.current.querySelectorAll('.carousel-item');
+      if (items[idx]) {
+        canvas = items[idx].querySelector('canvas');
+      }
+    }
+    // Last fallback: any canvas
+    if (!canvas) canvas = document.querySelector('canvas');
+    if (canvas) {
+      try {
+        const dataUrl = canvas.toDataURL('image/png');
+        setPlanetShot(dataUrl);
+        setShowPlanetBanner(true);
+        setAnimating(true);
+        setTimeout(() => setAnimating(false), 600);
+      } catch (e) {
+        alert('Screenshot failed.');
+      }
+    } else {
+      alert('No canvas found for screenshot.');
+    }
+  }
+
+  // Save the planet shot image
+  function savePlanetShot() {
+    if (!planetShot) return;
+    const params = new URLSearchParams(location.search);
+    let planet = params.get("planet");
+    let idx = getSlideFromQuery();
+    if (!planet || !planetToIndex.hasOwnProperty(planet)) {
+      // fallback to index name
+      planet = Object.keys(planetToIndex).find(key => planetToIndex[key] === idx) || 'planet';
+    }
+    const link = document.createElement('a');
+    link.href = planetShot;
+    link.download = `${planet}-screenshot.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // Social share handlers for planet shot
+  function sharePlanetOn(platform) {
+    if (!planetShot) return;
+    const url = encodeURIComponent(window.location.href);
+    const text = encodeURIComponent('Check out my planet snapshot!');
+    if (platform === 'facebook') {
+      window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
+    } else if (platform === 'twitter') {
+      window.open(`https://twitter.com/intent/tweet?url=${url}&text=${text}`, '_blank');
+    } else if (platform === 'instagram') {
+      alert('Instagram does not support direct web sharing. Save the image and upload manually.');
+    }
+  }
   return (
     <div>
       {/* Fixed search bar for desktop only */}
@@ -219,17 +294,43 @@ function DescriptionCarousel() {
 
       {/* Carousel */}
       <div id="carouselExample" className="carousel slide" data-bs-ride="false" ref={carouselRef}>
-        {/* Control toggle button in top-right corner */}
-        <button
-          className="control-toggle top-right"
-          onClick={() => setFreeControl(!freeControl)}
-        >
-          <FaGamepad size={24} />
-        </button>
+        {/* Top-right corner icons container */}
+        <div className="icons">
+          <button
+            className={`icon-btn${animating ? '' : ''}`}
+            onClick={() => setFreeControl(!freeControl)}
+            title="Toggle Free Control"
+          >
+            <FaGamepad size={24} />
+          </button>
+          <button
+            className={`icon-btn${animating ? ' animating' : ''}`}
+            onClick={handlePlanetShot}
+            title="Take Planet Photo"
+          >
+            <FaCamera size={22} />
+          </button>
+        </div>
+
+        {/* Planet photo banner */}
+        {showPlanetBanner && planetShot && (
+          <div className="planet-photo-banner">
+            <div className="film-frame planet-film-frame">
+              <img src={planetShot} alt="Planet Snapshot" className="screenshot-img" />
+            </div>
+            <div className="planet-socials">
+              <button onClick={() => savePlanetShot()} title="Save Image"><FaSave size={22} /></button>
+              <button onClick={() => sharePlanetOn('facebook')} title="Share on Facebook"><FaFacebook size={22} /></button>
+              <button onClick={() => sharePlanetOn('twitter')} title="Share on Twitter"><FaTwitter size={22} /></button>
+              <button onClick={() => sharePlanetOn('instagram')} title="Share on Instagram"><FaInstagram size={22} /></button>
+              <button className="banner-close-btn-social" onClick={() => setShowPlanetBanner(false)} title="Close">×</button>
+            </div>
+          </div>
+        )}
 
         <div className="carousel-inner">
           {/* Vesta */}
-          <div className="carousel-item active">
+          <div className="carousel-item active" ref={canvasRefs[0]}>
             <div className="canvas-wrapper">
               {/* Inline search bar for mobile/tablet only */}
               <form className="planet-search-bar planet-search-bar-inline" onSubmit={handleSearch} autoComplete="off">
@@ -250,13 +351,13 @@ function DescriptionCarousel() {
           </div>
 
           {/* Pluto */}
-          <div className="carousel-item">
+          <div className="carousel-item" ref={canvasRefs[1]}>
             <div className="canvas-wrapper">
               {/* Inline search bar for mobile/tablet only */}
               <form className="planet-search-bar planet-search-bar-inline" onSubmit={handleSearch} autoComplete="off">
                 <input
                   type="text"
-                  placeholder="Search planet..."
+                    placeholder="Search planet..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   aria-label="Search planet"
@@ -271,7 +372,7 @@ function DescriptionCarousel() {
           </div>
 
           {/* Earth */}
-          <div className="carousel-item">
+          <div className="carousel-item" ref={canvasRefs[2]}>
             <div className="canvas-wrapper">
               {/* Inline search bar for mobile/tablet only */}
               <form className="planet-search-bar planet-search-bar-inline" onSubmit={handleSearch} autoComplete="off">

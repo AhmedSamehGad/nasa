@@ -1,3 +1,146 @@
+/* Top-right icons container for control and shot */
+/* Top-left icons container for control and shot */
+
+/* Top-right icons container for control and shot */
+.icons {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+@media (max-width: 900px) {
+    .icons {
+        top: 10px;
+        right: 10px;
+        gap: 7px;
+    }
+}
+@media (max-width: 600px) {
+    .icons {
+        top: 4px;
+        right: 4px;
+        gap: 4px;
+    }
+}
+/* Planet photo banner (old photo style) */
+.planet-photo-banner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 520px;
+    max-width: 98vw;
+    background: #222 url("data:image/svg+xml;utf8,<svg width='100%' height='100%' xmlns='http://www.w3.org/2000/svg'><rect width='100%' height='100%' fill='%23222222'/><rect x='0' y='0' width='100%' height='100%' fill='none' stroke='white' stroke-width='8'/><rect x='0' y='0' width='100%' height='100%' fill='none' stroke='black' stroke-width='20'/><g stroke='white' stroke-width='6'><circle cx='40' cy='18' r='8'/><circle cx='120' cy='18' r='8'/><circle cx='200' cy='18' r='8'/><circle cx='280' cy='18' r='8'/><circle cx='360' cy='18' r='8'/><circle cx='440' cy='18' r='8'/><circle cx='40' cy='282' r='8'/><circle cx='120' cy='282' r='8'/><circle cx='200' cy='282' r='8'/><circle cx='280' cy='282' r='8'/><circle cx='360' cy='282' r='8'/><circle cx='440' cy='282' r='8'/></g></svg>");
+    border-radius: 18px;
+    box-shadow: 0 16px 64px #000a, 0 4px 24px #3498db55;
+    z-index: 4100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 0 24px 0;
+    border: 8px solid #fff;
+    overflow: visible;
+    animation: banner-drop 0.7s cubic-bezier(.4,2,.3,1);
+}
+.planet-film-frame {
+    width: 440px;
+    max-width: 90vw;
+    height: 260px;
+    margin: 0 auto 18px auto;
+    background: #111;
+    border-radius: 10px;
+    box-shadow: 0 2px 24px #000a, 0 1.5px 8px #3498db55;
+    border: 4px solid #222;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+.planet-socials {
+    display: flex;
+    gap: 18px;
+    margin-top: 12px;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 18px;
+    z-index: 20;
+}
+.planet-socials button {
+    background: rgba(30, 34, 54, 0.7);
+    border: 1.5px solid #3498db88;
+    border-radius: 50%;
+    padding: 7px;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 2px 8px #3498db33;
+    transition: background 0.18s, border 0.18s, box-shadow 0.18s, transform 0.18s;
+    outline: none;
+    font-size: 1.1rem;
+}
+.planet-socials button:hover {
+    background: #3498db33;
+    border: 1.5px solid #fff8;
+    box-shadow: 0 4px 16px #3498db55;
+    transform: scale(1.13);
+}
+.planet-shot-toggle {
+    background: rgba(30, 34, 54, 0.7);
+    border: 1.5px solid #3498db88;
+    border-radius: 50%;
+    padding: 6px;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 2px 12px #3498db33;
+    transition: background 0.2s, border 0.2s, box-shadow 0.2s, transform 0.18s;
+        width: 44px;
+        height: 44px;
+        padding: 0;
+        font-size: 1.45rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+    margin-left: 8px;
+}
+.planet-shot-toggle:hover {
+    background: rgba(52, 152, 219, 0.18);
+    border: 1.5px solid #fff8;
+    box-shadow: 0 4px 24px #3498db55;
+}
+
+/* Close button in social icons row */
+.planet-socials .banner-close-btn-social {
+    background: rgba(30, 34, 54, 0.7);
+    border: 1.5px solid #3498db88;
+    border-radius: 50%;
+    padding: 7px 13px 10px 13px;
+    color: #fff;
+    cursor: pointer;
+    box-shadow: 0 2px 8px #3498db33;
+    transition: background 0.18s, border 0.18s, box-shadow 0.18s, transform 0.18s, color 0.18s;
+    font-size: 1.5rem;
+    font-weight: bold;
+    outline: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+}
+.planet-socials .banner-close-btn-social:hover {
+    background: #3498db33;
+    border: 1.5px solid #fff8;
+    box-shadow: 0 4px 16px #3498db55;
+    color: #3498db;
+    transform: scale(1.13);
+}
 /* Responsive Design */
 @media (max-width: 900px) {
     .carousel,
@@ -378,11 +521,7 @@ html, body {
 
 
 
-.control-toggle.top-right {
-    position: absolute;
-    top: 18px;
-    right: 18px;
-    z-index: 2000;
+.icon-btn {
     background: rgba(30, 34, 54, 0.7);
     border: 1.5px solid #3498db88;
     border-radius: 50%;
@@ -390,15 +529,19 @@ html, body {
     color: #fff;
     cursor: pointer;
     box-shadow: 0 2px 12px #3498db33;
-    transition: background 0.2s, border 0.2s, box-shadow 0.2s;
+    transition: background 0.2s, border 0.2s, box-shadow 0.2s, transform 0.18s;
     width: 36px;
     height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
+    outline: none;
 }
-.control-toggle.top-right:hover {
+.icon-btn:hover {
     background: rgba(52, 152, 219, 0.18);
     border: 1.5px solid #fff8;
     box-shadow: 0 4px 24px #3498db55;
+}
+.icon-btn.animating {
+    animation: screenshot-pop 0.6s cubic-bezier(.4,2,.3,1);
 }
