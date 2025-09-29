@@ -38,6 +38,10 @@ function PlayerController({
   const input = useRef({ forward: 0, right: 0, running: false, jump: false })
   const footstepSound = useRef(null)
 
+
+  // Screen power state (lifted up to Game)
+  const { screenOn, setScreenOn, setScreenLoading } = arguments[0];
+
   useEffect(() => {
     footstepSound.current = new Audio("/audios/footsteps.mp3")
     footstepSound.current.loop = true
@@ -67,14 +71,26 @@ function PlayerController({
       }
     }
 
-
     const onKeyDown = (e) => {
       if (e.code === "KeyW") input.current.forward = 1
       if (e.code === "KeyS") input.current.forward = -1
       if (e.code === "KeyA") input.current.right = -1
       if (e.code === "KeyD") input.current.right = 1
       if (e.code === "ShiftLeft") input.current.running = true
-      if (e.code === "Space") input.current.jump = true
+      if (e.code === "Space") {
+        input.current.jump = true
+        if (sitting) {
+          if (!screenOn) {
+            setScreenLoading(true);
+            setTimeout(() => {
+              setScreenOn(true);
+              setScreenLoading(false);
+            }, 1200); // 1.2s power-on animation
+          } else {
+            setScreenOn(false);
+          }
+        }
+      }
 
       if (e.code === "KeyE") {
         const p = player.current
@@ -321,6 +337,9 @@ function preloadAudio(url) {
 }
 
 export default function Game() {
+  // Screen power state
+  const [screenOn, setScreenOn] = useState(false);
+  const [screenLoading, setScreenLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
 
@@ -487,53 +506,73 @@ export default function Game() {
 
         {/* === Always Visible Virtual Screen with Search Bar === */}
 
+        {/* Black HTML element behind the screen for solid coverage, always when screen is powered off */}
+        
+          <Html
+            position={[screenPos[0] - 0.021, screenPos[1] + 0.77, screenPos[2] + 0.099]}
+            transform
+            distanceFactor={1.5}
+            scale={[0.135, 0.14, 0.1]}
+            zIndexRange={[0, 0]}
+          >
+            <div style={{
+              width: '100%',
+              height: '100%',
+              background: '#000',
+              borderRadius: '18px',
+              boxShadow: '0 0 32px #000',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              zIndex: 0,
+              opacity: 1,
+            }} />
+          </Html>
+        
         <Html
           position={[screenPos[0] - 0.02, screenPos[1] + 0.77, screenPos[2] + 0.1]}
           transform
           distanceFactor={1.5}
           scale={[0.1255, 0.13, 0.1]}
         >
-          <div className={`space-screen${zoomed ? " focus-anim" : ""}`}>
-            <div className="screen-header">
-              <h2>🚀 Mission Console</h2>
-              <input type="text" placeholder="Search planets..." />
-              <select>
-                <option>Earth</option>
-                <option>Mars</option>
-                <option>Jupiter</option>
-                <option>Pluto</option>
-              </select>
-            </div>
-
-            <div className="planet-cards">
-              {planetList.map((planet, idx) => (
-                <div
-                  key={planet.name}
-                  className={`planet-card${selectedPlanet === idx ? " selected" : ""}`}
-                  data-slide={idx}
-                  onClick={() => navigate(`/description?planet=${encodeURIComponent(planet.name)}`)}
-                  style={{ cursor: "pointer" }}
-                >
-                  <h3>{planet.emoji} {planet.name}</h3>
-                  <p>{planet.desc}</p>
+          <div className={`space-screen${zoomed ? " focus-anim" : ""} ${!screenOn ? "screen-off" : ""}`}>
+            {/* Power-on animation overlay */}
+            {screenLoading && (
+              <div className="screen-loading-overlay">
+                <div className="screen-power-animation" />
+                <div style={{color:'#fff',fontWeight:'bold',fontSize:18,marginTop:16}}>Powering On...</div>
+              </div>
+            )}
+            {/* Screen content only if powered on */}
+            {screenOn && !screenLoading && (
+              <>
+                <div className="screen-header">
+                  <h2>🚀 Mission Console</h2>
+                  <input type="text" placeholder="Search planets..." />
+                  <select>
+                    <option>Earth</option>
+                    <option>Mars</option>
+                    <option>Jupiter</option>
+                    <option>Pluto</option>
+                  </select>
                 </div>
-              ))}
-            </div>
+                <div className="planet-cards">
+                  {planetList.map((planet, idx) => (
+                    <div
+                      key={planet.name}
+                      className={`planet-card${selectedPlanet === idx ? " selected" : ""}`}
+                      data-slide={idx}
+                      onClick={() => navigate(`/description?planet=${encodeURIComponent(planet.name)}`)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <h3>{planet.emoji} {planet.name}</h3>
+                      <p>{planet.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
-          <style>{`
-            .space-screen {
-              transition: box-shadow 0.3s, transform 0.4s cubic-bezier(.4,2,.3,1), opacity 0.4s;
-              box-shadow: 0 2px 16px #0007;
-              opacity: 1;
-              transform: scale(1);
-            }
-            .space-screen.focus-anim {
-              box-shadow: 0 8px 32px #3498dbcc, 0 2px 16px #000a;
-              opacity: 1;
-              transform: scale(1.08);
-              z-index: 10;
-            }
-          `}</style>
         </Html>
 
         <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
@@ -556,6 +595,9 @@ export default function Game() {
           zoomed={zoomed}
           setZoomed={setZoomed}
           setCameraLocked={setCameraLocked}
+          screenOn={screenOn}
+          setScreenOn={setScreenOn}
+          setScreenLoading={setScreenLoading}
         />
 
         {!cameraLocked && (
@@ -592,6 +634,27 @@ export default function Game() {
             </button>
           </div>
         )}
+        {/* Prominent screen toggle hint when sitting */}
+        {sitting && (
+          <div style={{
+            marginTop: 12,
+            background: '#181c2b',
+            color: '#fff',
+            borderRadius: 8,
+            padding: '8px 18px',
+            fontWeight: 600,
+            fontSize: 16,
+            boxShadow: '0 2px 8px #0005',
+            border: '2px solid #3498db',
+            display: 'inline-block',
+            marginLeft: 8,
+          }}>
+            {screenOn
+              ? <>Press <b>Space</b> to turn screen off</>
+              : <>Press <b>Space</b> to turn screen on</>
+            }
+          </div>
+        )}
       </div>
 
       {/* Info icon and E button when near chair */}
@@ -620,11 +683,25 @@ export default function Game() {
           </div>
           <div style={{position:'fixed',left:20,bottom:20,zIndex:1000,background:'#222d',color:'#fff',borderRadius:8,padding:'10px 18px',fontSize:17,boxShadow:'0 2px 8px #0005'}}>
             {zoomed ? (
-              <div>Press <b>F</b> to exit focus</div>
+              <>
+                <div>Press <b>F</b> to exit focus</div>
+                <div style={{marginTop:8}}>
+                  {screenOn
+                    ? <>Press <b>Space</b> to turn screen off</>
+                    : <>Press <b>Space</b> to turn screen on</>
+                  }
+                </div>
+              </>
             ) : (
               <>
                 <div>Press <b>F</b> to focus on screen</div>
                 <div>Press <b>Ctrl</b> to exit</div>
+                <div style={{marginTop:8}}>
+                  {screenOn
+                    ? <>Press <b>Space</b> to turn screen off</>
+                    : <>Press <b>Space</b> to turn screen on</>
+                  }
+                </div>
               </>
             )}
           </div>
