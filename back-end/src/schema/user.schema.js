@@ -1,6 +1,6 @@
 import mongoose from 'mongoose'
 
-const UserSchema = mongoose.Schema({
+const UserSchema =  mongoose.Schema({
     // info
     firstName:String,
     lastName:String,
@@ -10,6 +10,9 @@ const UserSchema = mongoose.Schema({
     password:String,
 
     tokens:{type:[String], default:[]},
+
+    // history
+    history: {type: [{action:String, createdAt:{type:Date, default:() => Date.now() }}], default:[]},
 
     // check email
     isVerified:{type:Boolean, default:false},
