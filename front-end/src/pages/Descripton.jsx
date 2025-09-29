@@ -210,41 +210,42 @@ function DescriptionCarousel() {
     // else do nothing or show not found (not implemented)
   }
 
-  // Take a screenshot of the planet in the current carousel slide using planet name
-  function handlePlanetShot() {
-    const params = new URLSearchParams(location.search);
-    let planet = params.get("planet");
-    let idx = getSlideFromQuery();
-    // If planet param is present, use its index
-    if (planet && planetToIndex.hasOwnProperty(planet)) {
-      idx = planetToIndex[planet];
-    }
-    // Use the correct ref for the planet
+  // Take a screenshot of the planet in the currently visible carousel slide
+  async function handlePlanetShot() {
     let canvas = null;
-    if (canvasRefs[idx] && canvasRefs[idx].current) {
-      canvas = canvasRefs[idx].current.querySelector('canvas');
-    }
-    // Fallback: try to get the active carousel-item's canvas
-    if (!canvas && carouselRef.current) {
-      const items = carouselRef.current.querySelectorAll('.carousel-item');
-      if (items[idx]) {
-        canvas = items[idx].querySelector('canvas');
+    if (carouselRef.current) {
+      // Always get the canvas from the active carousel-item
+      const activeItem = carouselRef.current.querySelector('.carousel-item.active');
+      if (activeItem) {
+        canvas = activeItem.querySelector('canvas');
       }
     }
-    // Last fallback: any canvas
+    // Last fallback: any canvas (should rarely happen)
     if (!canvas) canvas = document.querySelector('canvas');
-    if (canvas) {
-      try {
-        const dataUrl = canvas.toDataURL('image/png');
-        setPlanetShot(dataUrl);
-        setShowPlanetBanner(true);
-        setAnimating(true);
-        setTimeout(() => setAnimating(false), 600);
-      } catch (e) {
+    if (!canvas) {
+      alert('No canvas found for screenshot.');
+      return;
+    }
+    // Wait for next animation frame to ensure render is complete
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    try {
+      const dataUrl = canvas.toDataURL('image/png');
+      // Check for blank/empty image (dataUrl is a PNG header only)
+      if (dataUrl.length < 200) {
+        alert('Screenshot failed: blank image. Try again after the scene loads.');
+        return;
+      }
+      setPlanetShot(dataUrl);
+      setShowPlanetBanner(true);
+      setAnimating(true);
+      setTimeout(() => setAnimating(false), 600);
+    } catch (e) {
+      // CORS error: SecurityError: Failed to execute 'toDataURL' on 'HTMLCanvasElement'
+      if (e instanceof DOMException && e.name === 'SecurityError') {
+        alert('Screenshot failed due to CORS. Please ensure all models/textures are loaded from the same origin or with proper CORS headers.');
+      } else {
         alert('Screenshot failed.');
       }
-    } else {
-      alert('No canvas found for screenshot.');
     }
   }
 
