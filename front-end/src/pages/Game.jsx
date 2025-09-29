@@ -111,6 +111,10 @@ function PlayerController({
           // Show mouse pointer and exit pointer lock
           if (document.exitPointerLock) document.exitPointerLock();
           document.body.style.cursor = "auto";
+        } else if (sitting && zoomed) {
+          setZoomed(false);
+          setCameraLocked(false);
+          // Optionally, re-request pointer lock if you want to return to look mode
         }
       }
 
@@ -246,9 +250,85 @@ function Walls({ layout }) {
   )
 }
 
+
+// List of all model, texture, and sound paths to preload
+const MODEL_PATHS = [
+  "/models/seat.glb",
+  "/models/screen.glb",
+  "/models/moon.glb",
+];
+const TEXTURE_PATHS = [
+  // Add all texture files used in your scene here, e.g.:
+  // "/imges/pluto.jpg",
+  // "/imges/stars.jpg",
+];
+const SOUND_PATHS = [
+  "/audios/wind.mp3",
+  // Add more sound paths here if needed
+];
+function preloadTexture(url) {
+  return new Promise((resolve) => {
+    const loader = new (window.THREE?.TextureLoader || THREE.TextureLoader)();
+    loader.load(url, resolve, undefined, () => resolve()); // always resolve
+  });
+}
+
+function preloadGLTF(url) {
+  return new Promise((resolve) => {
+    // Always use the imported THREE and attach GLTFLoader if missing
+    let Loader = (window.THREE && window.THREE.GLTFLoader) || THREE.GLTFLoader;
+    if (!Loader) {
+      // fallback: skip
+      resolve();
+      return;
+    }
+    const loader = new Loader();
+    loader.load(url, resolve, undefined, () => resolve()); // always resolve
+  });
+}
+
+function preloadAudio(url) {
+  return new Promise((resolve, reject) => {
+    const audio = new window.Audio();
+    audio.src = url;
+    audio.oncanplaythrough = () => resolve();
+    audio.onerror = reject;
+  });
+}
+
 export default function Game() {
+  const [loading, setLoading] = useState(true);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    // Always import GLTFLoader and attach to window.THREE
+    import("three/examples/jsm/loaders/GLTFLoader").then(mod => {
+      if (!window.THREE) window.THREE = {};
+      window.THREE.GLTFLoader = mod.GLTFLoader;
+      // Also attach to imported THREE for safety
+      THREE.GLTFLoader = mod.GLTFLoader;
+      startPreload();
+    }).catch(() => startPreload());
+
+    function startPreload() {
+      const total = MODEL_PATHS.length + SOUND_PATHS.length;
+      let done = 0;
+      function tick() {
+        done++;
+        setProgress(Math.round((done / total) * 100));
+      }
+      Promise.all([
+        ...MODEL_PATHS.map(p => preloadGLTF(p).then(tick)),
+        ...TEXTURE_PATHS.map(p => preloadTexture(p).then(tick)),
+        ...SOUND_PATHS.map(p => preloadAudio(p).then(tick)),
+      ]).then(() => {
+        setLoading(false);
+      });
+    }
+  }, []);
   // Wind SFX background (robust for refresh)
   useEffect(() => {
+    if (loading) return;
     let wind = new Audio("/audios/wind.mp3");
     wind.loop = true;
     wind.volume = 0.65;
@@ -272,7 +352,7 @@ export default function Game() {
       wind.currentTime = 0;
       wind = null;
     };
-  }, []);
+  }, [loading]);
   const navigate = useNavigate();
   // Add planetList and selectedPlanet state
   const [selectedPlanet, setSelectedPlanet] = useState(0);
@@ -351,6 +431,20 @@ export default function Game() {
     return () => document.removeEventListener("pointerlockchange", onPointerLockChange)
   }, [])
 
+  if (loading) {
+    return (
+      <div className="game-root" style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',background:'#111'}}>
+        <div style={{textAlign:'center'}}>
+          <div className="spinner" style={{marginBottom:24}}>
+            <div style={{width:48,height:48,border:'6px solid #3498db',borderTop:'6px solid transparent',borderRadius:'50%',animation:'spin 1s linear infinite',margin:'0 auto'}} />
+          </div>
+          <div style={{color:'#fff',fontSize:20,letterSpacing:1}}>Loading... {progress}%</div>
+        </div>
+        <style>{`@keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}`}</style>
+      </div>
+    );
+  }
+
   return (
     <div className="game-root">
       <Canvas shadows camera={{ position: [0, 2, 10], fov: 75 }}>
@@ -360,15 +454,15 @@ export default function Game() {
         <ambientLight intensity={0.25} />
         <directionalLight position={[10, 20, 10]} intensity={1.0} castShadow />
 
-  <Model path={"/models/seat.glb"} rotation={[0, 3.2, 0]} position={chairCenter} scale={0.7} />
-  <Model path={"/models/screen.glb"} position={screenPos} scale={0.7} />
-  {/* Moon model in the night sky, shining */}
-  <Model path={"/models/moon.glb"} position={[-8, 14, -30]} scale={2.2} />
-  {/* Moon shine light */}
-  <pointLight position={[-8, 15.5, -30]} intensity={4.5} color="#fffbe6" distance={30} decay={2} castShadow />
+        <Model path={"/models/seat.glb"} rotation={[0, 3.2, 0]} position={chairCenter} scale={0.7} />
+        <Model path={"/models/screen.glb"} position={screenPos} scale={0.7} />
+        {/* Moon model in the night sky, shining */}
+        <Model path={"/models/moon.glb"} position={[-8, 14, -30]} scale={2.2} />
+        {/* Moon shine light */}
+        <pointLight position={[-8, 15.5, -30]} intensity={4.5} color="#fffbe6" distance={30} decay={2} castShadow />
 
         {/* === Always Visible Virtual Screen with Search Bar === */}
-<Html
+        <Html
           position={[screenPos[0] - 0.02, screenPos[1] + 0.77, screenPos[2] + 0.1]}
           transform
           distanceFactor={1.5}
@@ -402,8 +496,6 @@ export default function Game() {
             </div>
           </div>
         </Html>
-
-
 
         <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
           <planeGeometry args={[200, 200]} />
@@ -500,5 +592,5 @@ export default function Game() {
         </>
       )}
     </div>
-  )
+  );
 }
