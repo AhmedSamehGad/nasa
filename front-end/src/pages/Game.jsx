@@ -31,6 +31,9 @@ function PlayerController({
     radius: 0.5,
     grounded: false,
   })
+  // Sitting animation state
+  const [sitAnim, setSitAnim] = useState(false);
+  const sitAnimProgress = useRef(0);
 
   const input = useRef({ forward: 0, right: 0, running: false, jump: false })
   const footstepSound = useRef(null)
@@ -78,9 +81,7 @@ function PlayerController({
         const dist = p.pos.distanceTo(new THREE.Vector3(...chairCenter))
         if (dist < chairRadius && !sitting) {
           stopFootsteps();
-          setSitting(true)
-          p.pos.set(chairCenter[0], chairCenter[1] + 0.5, chairCenter[2])
-          p.vel.set(0, 0, 0)
+          setSitAnim(true);
         }
       }
       // Ctrl or N exits sitting, but NOT in focus (zoomed) mode
@@ -163,6 +164,29 @@ function PlayerController({
   useFrame((_, delta) => {
     if (!enabled) return
     const p = player.current
+
+    // Sitting animation logic
+    if (sitAnim && !sitting) {
+      // Animate player to chair with a small rotation
+      sitAnimProgress.current += delta / 0.7; // 0.7s duration
+      const t = Math.min(1, sitAnimProgress.current);
+      // Interpolate position and rotation
+      const start = p.pos.clone();
+      const end = new THREE.Vector3(chairCenter[0], chairCenter[1] + 0.5, chairCenter[2]);
+      // Lerp position
+      p.pos.lerp(end, t);
+      // Animate camera rotation (simulate a small left-right sway)
+      const sway = Math.sin(t * Math.PI) * 0.18; // max 0.18 rad
+      camera.rotation.y = sway;
+      camera.position.lerp(new THREE.Vector3(p.pos.x, p.pos.y + 0.4, p.pos.z), 0.9);
+      if (t >= 1) {
+        setSitting(true);
+        setSitAnim(false);
+        sitAnimProgress.current = 0;
+        camera.rotation.y = 0;
+      }
+      return;
+    }
 
     if (sitting) {
       if (footstepSound.current && !footstepSound.current.paused) {
@@ -462,13 +486,14 @@ export default function Game() {
         <pointLight position={[-8, 15.5, -30]} intensity={4.5} color="#fffbe6" distance={30} decay={2} castShadow />
 
         {/* === Always Visible Virtual Screen with Search Bar === */}
+
         <Html
           position={[screenPos[0] - 0.02, screenPos[1] + 0.77, screenPos[2] + 0.1]}
           transform
           distanceFactor={1.5}
           scale={[0.1255, 0.13, 0.1]}
         >
-          <div className="space-screen">
+          <div className={`space-screen${zoomed ? " focus-anim" : ""}`}>
             <div className="screen-header">
               <h2>🚀 Mission Console</h2>
               <input type="text" placeholder="Search planets..." />
@@ -495,6 +520,20 @@ export default function Game() {
               ))}
             </div>
           </div>
+          <style>{`
+            .space-screen {
+              transition: box-shadow 0.3s, transform 0.4s cubic-bezier(.4,2,.3,1), opacity 0.4s;
+              box-shadow: 0 2px 16px #0007;
+              opacity: 1;
+              transform: scale(1);
+            }
+            .space-screen.focus-anim {
+              box-shadow: 0 8px 32px #3498dbcc, 0 2px 16px #000a;
+              opacity: 1;
+              transform: scale(1.08);
+              z-index: 10;
+            }
+          `}</style>
         </Html>
 
         <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
