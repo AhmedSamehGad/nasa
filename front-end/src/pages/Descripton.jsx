@@ -386,7 +386,7 @@ function DescriptionCarousel() {
                 />
               </form>
               <Scene ambient={1} directional={1.2} freeControl={freeControl}>
-                <Model path="/models/earth.glb" scale={earthScale} />
+                <Model path="/models/earth_2.glb" scale={earthScale} />
               </Scene>
               <DescriptionBox text="Earth is the only known planet that supports life." />
               <ImageBox src="/images/earth.jpg" caption="Earth Overview" />
